@@ -102,6 +102,37 @@ async def get_candles(symbol: str, broker: str = "FYERS"):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/journal")
+async def get_journal():
+    try:
+        from backend.journal import get_all_trades
+        return {"trades": get_all_trades()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/journal/summary")
+async def get_journal_summary_endpoint():
+    try:
+        from backend.journal import get_journal_summary
+        return get_journal_summary()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+class BacktestRequest(BaseModel):
+    symbol: str
+    days: int = 30
+
+@app.post("/backtest")
+async def run_backtest_endpoint(req: BacktestRequest):
+    try:
+        from backend.backtester import run_backtest
+        result = run_backtest(req.symbol, req.days)
+        if "error" in result:
+            raise HTTPException(status_code=400, detail=result["error"])
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/signals/{symbol}")
 async def get_signals(symbol: str, broker: str = "FYERS"):
     try:
@@ -129,4 +160,4 @@ async def get_signals(symbol: str, broker: str = "FYERS"):
             "rsi": latest.get("rsi")
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))

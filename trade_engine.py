@@ -274,34 +274,68 @@ class TradeTracker:
         )
         return True
 
-    def remove_trade(self, symbol: str) -> None:
+    def remove_trade(self, symbol: str, reason: str = "MANUAL_CLOSE", current_price: float = None) -> None:
         if symbol in self._active:
             trade = self._active[symbol]
             sector = trade["sector"]
             qty = trade["qty"]
             intraday = trade.get("intraday", True)
             margin_used = trade.get("margin_used", 0.0)
+            entry_price = trade["entry_price"]
+            side = trade.get("side", "BUY")
+
+            # Try to fetch current price if passed in
+            exit_price = current_price if current_price else entry_price 
+
+            # Calculate actual PnL
+            if side == "BUY":
+                pnl = (exit_price - entry_price) * qty
+            else:
+                pnl = (entry_price - exit_price) * qty
 
             # Determine side for balance update: if we bought, we close with SELL; if we shorted, we close with BUY
-            close_side = "SELL" if trade.get("side", "BUY") == "BUY" else "BUY"
+            close_side = "SELL" if side == "BUY" else "BUY"
             order_id = place_order(symbol, close_side, qty, 0, "MARKET", intraday)
             if order_id is None:
                 logger.error("CLOSE FAILED │ %s │ Could not place %s order", symbol, close_side)
                 return
 
-            # Restore margin on close
-            self.available_cash += margin_used
+            # Log to Daily Journal
+            try:
+                # Add to back end path to import
+                import sys
+                import os
+                backend_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "backend")
+                if backend_dir not in sys.path:
+                    sys.path.append(backend_dir)
+                from backend.journal import log_trade
+                
+                log_trade({
+                    "symbol": symbol,
+                    "side": side,
+                    "entry_price": entry_price,
+                    "exit_price": exit_price,
+                    "qty": qty,
+                    "pnl": round(pnl, 2),
+                    "opened_at": trade["opened_at"].isoformat() if hasattr(trade["opened_at"], "isoformat") else str(trade["opened_at"]),
+                    "closed_at": dt.datetime.now().isoformat(),
+                    "status": reason,
+                    "margin_used": margin_used
+                })
+            except Exception as e:
+                logger.error(f"Failed to log trade to journal: {e}")
+
+            # Restore margin and accrued PnL on close
+            self.available_cash += (margin_used + pnl)
             del self._active[symbol]
 
             logger.info(
-                "TRADE CLOSED  │ %s │ side=%s │ sector=%s │ mode=%s │ slots=%d/%d │ close_order=%s │ cash=%.2f",
+                "TRADE CLOSED  │ %s │ side=%s │ sector=%s │ reason=%s │ PnL=%.2f │ cash=%.2f",
                 symbol,
-                trade.get("side", "BUY"),
+                side,
                 sector,
-                "INTRADAY" if intraday else "DELIVERY",
-                self.open_count,
-                self._max_positions,
-                order_id,
+                reason,
+                pnl,
                 self.available_cash,
             )
 
@@ -377,13 +411,13 @@ def monitor_and_close_trades(current_prices: dict[str, float]) -> None:
         
         if current_price <= trade["stop_loss"]:
             logger.info("STOP LOSS HIT │ %s │ current=%.2f <= sl=%.2f", symbol, current_price, trade["stop_loss"])
-            to_close.append((symbol, "SL_HIT"))
+            to_close.append((symbol, "SL_HIT", current_price))
         elif current_price >= trade["target_price"]:
             logger.info("TARGET HIT │ %s │ current=%.2f >= tgt=%.2f", symbol, current_price, trade["target_price"])
-            to_close.append((symbol, "TARGET_HIT"))
+            to_close.append((symbol, "TARGET_HIT", current_price))
 
-    for symbol, reason in to_close:
-        trade_tracker.remove_trade(symbol)
+    for symbol, reason, price in to_close:
+        trade_tracker.remove_trade(symbol, reason=reason, current_price=price)
 
 
 # ═════════════════════════════════════════════════════════════════════════════
