@@ -18,6 +18,9 @@ dependencies = [
 [tool.uv]
 prerelease = "allow"
 
+[tool.setuptools]
+packages = []
+
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
