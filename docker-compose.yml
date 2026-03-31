@@ -1,0 +1,66 @@
+version: "3.9"
+
+services:
+  
+  # ── Backend API ────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: trading_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - SECRET_KEY=${SECRET_KEY:?error}
+      - DATABASE_URL=sqlite:///./trades.db
+      - BROKER=${BROKER:-FYERS}
+      - PAPER_TRADING=${PAPER_TRADING:-true}
+      - FYERS_APP_ID=${FYERS_APP_ID}
+      - FYERS_SECRET_KEY=${FYERS_SECRET_KEY}
+      - FYERS_ACCESS_TOKEN=${FYERS_ACCESS_TOKEN}
+      - DHAN_ACCESS_TOKEN=${DHAN_ACCESS_TOKEN}
+      - DHAN_CLIENT_ID=${DHAN_CLIENT_ID}
+      - SMTP_SERVER=${SMTP_SERVER:-smtp.gmail.com}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SENDER_EMAIL=${SENDER_EMAIL}
+      - SENDER_PASSWORD=${SENDER_PASSWORD}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3000}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - ./trades.db:/app/trades.db
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - trading_net
+  
+  # ── Frontend React App ────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: trading_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - trading_net
+
+networks:
+  trading_net:
+    driver: bridge
+
+volumes:
+  trades_db:
+  trading_logs:
