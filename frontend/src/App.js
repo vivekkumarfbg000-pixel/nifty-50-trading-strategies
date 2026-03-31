@@ -26,6 +26,8 @@ const CloseIcon = () => (
 
 const API_URL = process.env.REACT_APP_API_URL || (window.location.hostname === 'localhost' ? "http://localhost:8000" : "/api");
 
+const api = axios.create({ baseURL: API_URL });
+
 function App() {
   const [positions, setPositions] = useState({});
   const [symbol, setSymbol] = useState("");
@@ -37,8 +39,6 @@ function App() {
   const [pnl, setPnl] = useState({});
   const [toasts, setToasts] = useState([]);
 
-  const api = axios.create({ baseURL: API_URL });
-
   const showToast = (message, type = "success") => {
     const id = Date.now();
     setToasts(prev => [...prev, { id, message, type }]);
@@ -47,23 +47,23 @@ function App() {
     }, 4000);
   };
 
-  const fetchPositions = async () => {
+  const fetchPositions = React.useCallback(async () => {
     try {
       const res = await api.get("/positions");
       setPositions(res.data.positions || {});
     } catch (err) {
       console.error("Fetch positions error:", err);
     }
-  };
+  }, []);
 
-  const fetchPnl = async () => {
+  const fetchPnl = React.useCallback(async () => {
     try {
       const res = await api.get("/pnl");
       setPnl(res.data || {});
     } catch (err) {
       console.error("Fetch P&L error:", err);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchPositions();
@@ -73,7 +73,7 @@ function App() {
       fetchPnl();
     }, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchPositions, fetchPnl]);
 
   const handleOpenTrade = async (e) => {
     e.preventDefault();
