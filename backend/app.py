@@ -67,6 +67,7 @@ async def get_positions():
 @app.get("/pnl")
 async def get_pnl():
     try:
+        from trade_engine import PAPER_TRADING
         # Assuming initial simulated cash was 200000.0 
         initial_cash = 200000.0
         used_margin = sum(t.get("margin_used", 0) for t in tracker.active_trades.values())
@@ -77,10 +78,12 @@ async def get_pnl():
             "open_positions": tracker.open_count,
             "total_pnl": total_pnl,
             "win_rate": 0.0,
-            "avg_pnl": 0.0
+            "avg_pnl": 0.0,
+            "is_paper": PAPER_TRADING
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.post("/open_trade")
 async def open_trade(trade: TradeRequest):
