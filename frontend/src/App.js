@@ -191,29 +191,28 @@ function App() {
             <div className="metrics-grid">
               <div className="metric-card">
                 <div className="metric-label">Liquidity</div>
-                <div className="metric-value">₹{(pnl.available_cash || 200000).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</div>
+                <div className="metric-value">₹{(pnl.available_cash || 200000).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</div>
               </div>
               <div className="metric-card">
-                <div className="metric-label">Active Nodes</div>
+                <div className="metric-label">Nodes</div>
                 <div className="metric-value">{pnl.open_positions || 0}</div>
               </div>
-            </div>
-            
-            <div className="metric-card" style={{ gridColumn: '1 / -1' }}>
-              <div className="metric-label" style={{ display: 'flex', alignItems: 'center', gap: '8px'}}>
-                <WalletIcon /> Absolute P&L
-              </div>
-              <div className={`metric-value ${(pnl.total_pnl || 0) >= 0 ? 'positive' : 'negative'}`} style={{ fontSize: '2rem' }}>
-                ₹{(pnl.total_pnl || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+              <div className="metric-card pnl-hero">
+                <div className="metric-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <WalletIcon /> Absolute P&L
+                </div>
+                <div className={`metric-value ${(pnl.total_pnl || 0) >= 0 ? 'positive' : 'negative'}`} style={{ fontSize: '1.8rem' }}>
+                  ₹{(pnl.total_pnl || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Right Column: Positions Ledger */}
+        {/* Right Column: Operations Ledger */}
         <div className="col-right">
-          <div className="panel glass-panel" style={{ height: '100%', minHeight: '600px' }}>
-            <h2 className="panel-header" style={{ display: 'flex', justifyContent: 'space-between'}}>
+          <div className="panel glass-panel" style={{ minHeight: '520px' }}>
+            <h2 className="panel-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <TargetIcon /> Operations Ledger
               </div>
