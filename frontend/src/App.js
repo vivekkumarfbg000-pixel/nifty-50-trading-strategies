@@ -144,6 +144,10 @@ function App() {
           <Activity />
           <span>NexusTrade Tracker</span>
           <span className="dot"></span>
+          <div className="engine-status">
+            <span className="engine-dot pulse"></span>
+            LIVE ENGINE ONLINE
+          </div>
         </div>
         
         <div className="nav-tabs">

@@ -38,7 +38,7 @@ logger = logging.getLogger("NiftyEngine")
 # ═════════════════════════════════════════════════════════════════════════════
 
 # ── Broker API credentials (fill before running) ────────────────────────────
-BROKER = os.getenv("BROKER", "FYERS")  # "FYERS", "DHAN", or "UPSTOX"
+BROKER = os.getenv("BROKER", "UPSTOX")  # Default to UPSTOX as per user request
 
 FYERS_CONFIG = {
     "app_id":      os.getenv("FYERS_APP_ID", "YOUR_FYERS_APP_ID"),
@@ -64,6 +64,7 @@ UPSTOX_CONFIG = {
 UPSTOX_CONFIG["base_url"] = (
     "https://uat-api.upstox.com" if UPSTOX_CONFIG["use_sandbox"] else "https://api.upstox.com"
 )
+
 
 
 # ── Trading Mode ────────────────────────────────────────────────────────────

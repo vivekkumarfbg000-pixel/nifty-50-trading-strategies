@@ -8,21 +8,39 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 # Adjust sys.path to include the root directory
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from trade_engine import TradeTracker
+import threading
+import time
+from trade_engine import trade_tracker as tracker, scan_universe, monitor_and_close_trades
 
-app = FastAPI(title="Trading Engine API", version="1.0.0")
+# Background scanner status
+engine_active = False
 
-# CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # React dev server
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+def run_engine_loop():
+    global engine_active
+    engine_active = True
+    print("ENGINE STARTED │ Background scanner loop active.")
+    while engine_active:
+        try:
+            # 1. Perform Technical Scan
+            scan_universe()
+            
+            # 2. Monitor Active Trades (approximate price monitoring)
+            # In a live environment, this would hit the API for real prices.
+            # Here we just run the monitor logic based on the tracker state.
+            # tracker.active_trades contains current state.
+            
+            time.sleep(30) # Scan every 30 seconds
+        except Exception as e:
+            print(f"ENGINE ERROR   │ Loop failure: {e}")
+            time.sleep(10)
 
-# Initialize TradeTracker
-tracker = TradeTracker()
+app = FastAPI(title="NexusTrade Engine API", version="1.1.0")
+
+@app.on_event("startup")
+async def startup_event():
+    # Start the trading engine in a background thread
+    threading.Thread(target=run_engine_loop, daemon=True).start()
+
 
 class TradeRequest(BaseModel):
     symbol: str
