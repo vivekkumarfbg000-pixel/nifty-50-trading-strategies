@@ -49,10 +49,15 @@ async def get_positions():
 @app.get("/pnl")
 async def get_pnl():
     try:
+        # Assuming initial simulated cash was 200000.0 
+        initial_cash = 200000.0
+        used_margin = sum(t.get("margin_used", 0) for t in tracker.active_trades.values())
+        total_pnl = tracker.available_cash + used_margin - initial_cash
+        
         return {
             "available_cash": tracker.available_cash,
             "open_positions": tracker.open_count,
-            "total_pnl": 0.0,
+            "total_pnl": total_pnl,
             "win_rate": 0.0,
             "avg_pnl": 0.0
         }
@@ -108,12 +113,20 @@ async def get_signals(symbol: str, broker: str = "FYERS"):
         df = compute_rsi(df)
         
         latest = df.iloc[-1].to_dict()
+        
+        # Replace NaN with None for JSON serialization
+        import math
+        for k, v in latest.items():
+            if isinstance(v, float) and math.isnan(v):
+                latest[k] = None
+                
         return {
             "symbol": symbol,
-            "ema_fast": latest.get("EMA_FAST"),
-            "ema_slow": latest.get("EMA_SLOW"),
-            "supertrend": latest.get("SuperTrend"),
-            "rsi": latest.get("RSI")
+            "ema_fast": latest.get("ema_9"),
+            "ema_slow": latest.get("ema_21"),
+            "supertrend": latest.get("supertrend_dir"),
+            "supertrend_val": latest.get("supertrend_val"),
+            "rsi": latest.get("rsi")
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
